@@ -31,7 +31,7 @@ from core.calibration.chamber import (
     CalibrationException,
     MeasurementException,
     ChamberInterface,
-    SimulatedChamber,
+    DevelopmentChamber,
     AntennaPatternMeasurement,
     PowerCalibration,
 )
@@ -117,7 +117,7 @@ class TestMeasurementPoint(unittest.TestCase):
         self.assertEqual(measurement.unit, "dBm")
 
 
-class TestSimulatedChamber(unittest.TestCase):
+class TestDevelopmentChamber(unittest.TestCase):
     """Test simulated chamber implementation."""
     
     def setUp(self):
@@ -137,7 +137,7 @@ class TestSimulatedChamber(unittest.TestCase):
             certification_expires=None,
             certification_authority=None
         )
-        self.chamber = SimulatedChamber(self.spec)
+        self.chamber = DevelopmentChamber(self.spec)
     
     def test_connect(self):
         """Test chamber connection."""
@@ -229,7 +229,7 @@ class TestAntennaPatternMeasurement(unittest.TestCase):
             certification_expires=None,
             certification_authority=None
         )
-        self.chamber = SimulatedChamber(spec)
+        self.chamber = DevelopmentChamber(spec)
         self.chamber.connect()
         self.pattern_meas = AntennaPatternMeasurement(
             self.chamber,
@@ -354,7 +354,7 @@ class TestPowerCalibration(unittest.TestCase):
             certification_expires=None,
             certification_authority=None
         )
-        self.chamber = SimulatedChamber(spec)
+        self.chamber = DevelopmentChamber(spec)
         self.chamber.connect()
         self.power_cal = PowerCalibration(self.chamber)
     
