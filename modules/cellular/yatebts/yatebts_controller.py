@@ -134,8 +134,10 @@ class BTSConfig:
     # Security
     encryption: str = "A5/0"      # No encryption for interception
     
-    # Paths
+    # Paths - Use integrated YateBTS from external/
     yate_path: str = "/usr/local/bin/yate"
+    yatebts_source: str = "external/yatebts"  # Integrated YateBTS source
+    yate_source: str = "external/yate"         # Integrated Yate engine source
     config_dir: str = "/etc/yate"
     
 

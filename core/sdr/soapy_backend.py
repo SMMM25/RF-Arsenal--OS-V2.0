@@ -307,7 +307,10 @@ class SoapySDRDevice:
         self._device_args = device_args
         
         if not SOAPY_AVAILABLE:
-            self.logger.warning("SoapySDR not available - running in simulation mode")
+            self.logger.error(
+                "DEPENDENCY REQUIRED: SoapySDR not available. "
+                "Install with: sudo apt install soapysdr-tools libsoapysdr-dev python3-soapysdr"
+            )
     
     @staticmethod
     def enumerate_devices() -> List[SDRDeviceInfo]:

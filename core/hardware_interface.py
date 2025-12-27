@@ -248,95 +248,96 @@ class HardwareInterface(ABC):
         return True
 
 
+class HardwareRequiredError(Exception):
+    """
+    Exception raised when SDR hardware is required but not available.
+    
+    README COMPLIANCE: Rule #5 - Real-World Functional Only
+    No simulation modes or mock data in production.
+    """
+    pass
+
+
 class NoHardwareFallback(HardwareInterface):
     """
-    No-hardware fallback implementation for testing and development without physical SDR
+    Hardware requirement enforcer - raises errors when no SDR is connected.
+    
+    README COMPLIANCE: Rule #5 - Real-World Functional Only
+    This class does NOT provide mock data. It raises HardwareRequiredError
+    for any operation that requires actual hardware.
     """
     
     def __init__(self):
         super().__init__()
-        self._logger.info("Initializing No Hardware Fallback (No physical SDR)")
+        self._logger.warning(
+            "HARDWARE REQUIRED: No SDR hardware detected. "
+            "Connect BladeRF, HackRF, or compatible SDR to use RF features."
+        )
+        self.status = HardwareStatus.DISCONNECTED
+    
+    def _raise_hardware_required(self, operation: str):
+        """Raise HardwareRequiredError with helpful message"""
+        raise HardwareRequiredError(
+            f"HARDWARE REQUIRED: Cannot perform '{operation}' without SDR hardware.\n"
+            f"  Supported devices: BladeRF 2.0 micro xA9, HackRF One, RTL-SDR, USRP\n"
+            f"  Install drivers: sudo apt install libbladerf-dev hackrf librtlsdr-dev\n"
+            f"  Then reconnect your SDR device."
+        )
     
     def connect(self) -> bool:
-        """No-hardware connect"""
-        self._logger.info("[NO HW]: Connecting to hardware...")
-        self.status = HardwareStatus.CONNECTED
-        return True
+        """Raise error - hardware required"""
+        self._raise_hardware_required("connect")
+        return False
     
     def disconnect(self) -> bool:
-        """No-hardware disconnect"""
-        self._logger.info("[NO HW]: Disconnecting from hardware...")
+        """Disconnect is safe without hardware"""
         self.status = HardwareStatus.DISCONNECTED
         return True
     
     def configure(self, config: HardwareConfig) -> bool:
-        """No-hardware configure"""
-        self._logger.info(
-            f"[NO HW]: Configuring - Freq: {config.frequency/1e6:.2f} MHz, "
-            f"SR: {config.sample_rate/1e6:.2f} Msps, "
-            f"BW: {config.bandwidth/1e6:.2f} MHz"
-        )
-        
-        # Validate configuration
-        if not self.validate_frequency(config.frequency):
-            return False
-        if not self.validate_gain(config.tx_gain, "tx"):
-            return False
-        if not self.validate_gain(config.rx_gain, "rx"):
-            return False
-        
-        self.config = config
-        return True
+        """Raise error - hardware required"""
+        self._raise_hardware_required("configure")
+        return False
     
     def start_tx(self) -> bool:
-        """No-hardware start TX"""
-        self._logger.info("[NO HW]: Starting TX")
-        self.status = HardwareStatus.TRANSMITTING
-        return True
+        """Raise error - hardware required"""
+        self._raise_hardware_required("start_tx")
+        return False
     
     def stop_tx(self) -> bool:
-        """No-hardware stop TX"""
-        self._logger.info("[NO HW]: Stopping TX")
-        self.status = HardwareStatus.CONNECTED
+        """Stop TX is safe without hardware"""
         return True
     
     def start_rx(self) -> bool:
-        """No-hardware start RX"""
-        self._logger.info("[NO HW]: Starting RX")
-        self.status = HardwareStatus.RECEIVING
-        return True
+        """Raise error - hardware required"""
+        self._raise_hardware_required("start_rx")
+        return False
     
     def stop_rx(self) -> bool:
-        """No-hardware stop RX"""
-        self._logger.info("[NO HW]: Stopping RX")
-        self.status = HardwareStatus.CONNECTED
+        """Stop RX is safe without hardware"""
         return True
     
     def transmit(self, samples: bytes, num_samples: int) -> bool:
-        """No-hardware transmit"""
-        self._logger.debug(f"[NO HW]: Transmitting {num_samples} samples")
-        return True
+        """Raise error - hardware required"""
+        self._raise_hardware_required("transmit")
+        return False
     
     def receive(self, num_samples: int) -> Optional[bytes]:
-        """No-hardware receive"""
-        self._logger.debug(f"[NO HW]: Receiving {num_samples} samples")
-        # Return mock data
-        return bytes(num_samples * 4)  # 4 bytes per IQ sample (I16, Q16)
+        """Raise error - hardware required for RF reception"""
+        self._raise_hardware_required("receive")
+        return None
     
     def get_status(self) -> dict:
-        """No-hardware get status"""
+        """Return status indicating no hardware"""
         return {
-            'status': self.status.value,
-            'connected': self.status != HardwareStatus.DISCONNECTED,
-            'config': self.config,
-            'hardware_type': 'Mock',
-            'firmware_version': 'Mock v1.0'
+            'status': 'no_hardware',
+            'connected': False,
+            'config': None,
+            'hardware_type': None,
+            'error': 'HARDWARE REQUIRED: No SDR device connected'
         }
     
     def emergency_shutdown(self) -> bool:
-        """No-hardware emergency shutdown"""
-        self._logger.warning("[NO HW]: EMERGENCY SHUTDOWN")
-        self.stop_tx()
-        self.stop_rx()
+        """Emergency shutdown is safe without hardware"""
         self.status = HardwareStatus.DISCONNECTED
         return True

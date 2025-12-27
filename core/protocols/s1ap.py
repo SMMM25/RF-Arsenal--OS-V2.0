@@ -5,10 +5,11 @@ Production-grade S1 Application Protocol (S1-MME interface)
 Implements 3GPP TS 36.413 S1AP for E-UTRAN to EPC communication
 Integrates with stealth system for anonymous operation
 
-REAL-WORLD FUNCTIONAL:
+REAL-WORLD FUNCTIONAL ONLY:
 - Real SCTP socket support via pysctp library
-- Fallback to simulation mode when SCTP not available
+- NO SIMULATION MODE - Requires pysctp for operation
 - Full 3GPP TS 36.413 message encoding/decoding
+- README Rule #5: Real-World Only
 """
 
 import struct
@@ -25,13 +26,19 @@ import hashlib
 logger = logging.getLogger(__name__)
 
 # Try to import SCTP support
+# DependencyError for missing requirements
+class DependencyError(Exception):
+    """Raised when required dependency is not available"""
+    pass
+
+# Try to import SCTP support
 try:
     import sctp
     SCTP_AVAILABLE = True
     logger.info("SCTP support available via pysctp")
 except ImportError:
     SCTP_AVAILABLE = False
-    logger.warning("pysctp not available - S1AP will run in simulation mode")
+    logger.warning("pysctp not available - S1AP requires: pip install pysctp")
 
 
 # ============================================================================
@@ -900,20 +907,22 @@ class S1APConnection:
         """
         Establish S1AP connection.
         
-        REAL-WORLD FUNCTIONAL:
+        REAL-WORLD FUNCTIONAL ONLY (README Rule #5):
         - Uses SCTP (Stream Control Transmission Protocol) per 3GPP spec
-        - Falls back to simulation mode when SCTP not available
+        - NO SIMULATION MODE - Raises DependencyError if pysctp not available
         - SCTP provides multi-homing and message-oriented delivery
         
         Returns:
             True if connection established
+            
+        Raises:
+            DependencyError: If pysctp is not installed
         """
         if not SCTP_AVAILABLE:
-            logger.info(f"[SIMULATION] S1AP connection to {self.mme_address}:{self.mme_port}")
-            logger.info("Install pysctp for real SCTP support: pip install pysctp")
-            self._connected = True
-            self._simulated = True
-            return True
+            raise DependencyError(
+                "S1AP requires pysctp for real SCTP operation. "
+                "Install with: pip install pysctp && sudo modprobe sctp"
+            )
         
         try:
             # Create SCTP socket for S1-MME interface
@@ -941,11 +950,14 @@ class S1APConnection:
             return True
             
         except Exception as e:
-            logger.error(f"SCTP connection failed: {e}")
-            logger.info("Falling back to simulation mode")
-            self._connected = True
-            self._simulated = True
-            return True
+            logger.error(f"DEPENDENCY REQUIRED: SCTP connection failed: {e}")
+            logger.error(
+                "S1AP requires pysctp and kernel SCTP support. "
+                "Install with: pip install pysctp && sudo modprobe sctp"
+            )
+            self._connected = False
+            self._simulated = False
+            return False
     
     def disconnect(self):
         """Disconnect S1AP connection"""
@@ -983,33 +995,32 @@ class S1APConnection:
         """
         Send S1AP message.
         
-        REAL-WORLD FUNCTIONAL:
-        - Sends via SCTP when available
-        - Queues message in simulation mode
+        REAL-WORLD FUNCTIONAL ONLY (README Rule #5):
+        - Sends via SCTP - NO SIMULATION MODE
         - Uses PPID 18 (S1AP) per 3GPP spec
         
         Args:
             message: Encoded S1AP message
             
         Returns:
-            True if sent/queued successfully
+            True if sent successfully
+            
+        Raises:
+            ConnectionError: If not connected
         """
         with self._lock:
-            if hasattr(self, '_simulated') and not self._simulated and self._socket:
-                try:
-                    # Send via real SCTP connection
-                    # S1AP messages sent on stream 0 (control stream)
-                    self._socket.sctp_send(message, ppid=18, stream=0)
-                    logger.debug(f"S1AP message sent: {len(message)} bytes")
-                    return True
-                except Exception as e:
-                    logger.error(f"SCTP send failed: {e}")
-                    return False
-            else:
-                # Simulation mode - queue the message
-                self._send_queue.append(message)
-                logger.debug(f"[SIMULATION] S1AP message queued: {len(message)} bytes")
+            if not self._connected or not self._socket:
+                raise ConnectionError("S1AP not connected - call connect() first")
+            
+            try:
+                # Send via real SCTP connection
+                # S1AP messages sent on stream 0 (control stream)
+                self._socket.sctp_send(message, ppid=18, stream=0)
+                logger.debug(f"S1AP message sent: {len(message)} bytes")
                 return True
+            except Exception as e:
+                logger.error(f"SCTP send failed: {e}")
+                return False
     
     def process_received(self, data: bytes):
         """Process received S1AP message"""

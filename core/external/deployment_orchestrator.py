@@ -552,8 +552,8 @@ class DeploymentOrchestrator:
     # ========================================================================
     
     def _deploy_simulation(self) -> bool:
-        """Deploy in simulation mode"""
-        logger.info("Deploying in simulation mode")
+        """Deploy in development/testing mode (requires hardware for RF operations)"""
+        logger.info("Deploying in development mode - RF operations require hardware")
         
         try:
             from .stack_manager import ExternalStackManager, StackConfig, StackType

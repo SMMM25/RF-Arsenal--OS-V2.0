@@ -19,7 +19,8 @@ from .hardware_interface import (
     HardwareConfig, 
     HardwareStatus,
     FrequencyBand,
-    NoHardwareFallback
+    NoHardwareFallback,
+    HardwareRequiredError
 )
 
 # Try to import BladeRF hardware
@@ -28,7 +29,10 @@ try:
     BLADERF_AVAILABLE = True
 except ImportError:
     BLADERF_AVAILABLE = False
-    logging.warning("BladeRF hardware not available - using no-hardware mode")
+    logging.warning(
+        "HARDWARE REQUIRED: BladeRF library not available. "
+        "Install with: sudo apt install libbladerf-dev && pip install pybladerf"
+    )
 
 
 class BladeRFController:
@@ -67,12 +71,15 @@ class BladeRFController:
         self._operation_lock = threading.RLock()  # Reentrant lock for nested operations
         self.logger = logging.getLogger(__name__)
         
-        # Select hardware implementation
+        # Select hardware implementation - README Rule #5: Real hardware required
         if BLADERF_AVAILABLE:
             self.logger.info("Initializing BladeRF hardware controller")
             self.hardware: HardwareInterface = BladeRFHardware()
         else:
-            self.logger.warning("BladeRF not available - using no-hardware fallback")
+            self.logger.warning(
+                "HARDWARE REQUIRED: BladeRF not available. "
+                "RF operations will raise HardwareRequiredError until hardware is connected."
+            )
             self.hardware: HardwareInterface = NoHardwareFallback()
     
     @classmethod

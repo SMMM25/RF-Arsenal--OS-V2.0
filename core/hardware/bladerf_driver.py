@@ -611,13 +611,13 @@ class BladeRFDriver:
             self._streaming_rx = True
             
             if self._no_hardware:
-                # Start simulated RX thread
-                self._rx_thread = threading.Thread(
-                    target=self._no_hardware_rx_thread,
-                    args=(channels,),
-                    daemon=True
+                # README Rule #5: No simulation - hardware required
+                logger.error(
+                    "HARDWARE REQUIRED: Cannot start RX streaming without BladeRF device. "
+                    "Connect BladeRF 2.0 micro xA9 and restart."
                 )
-                self._rx_thread.start()
+                self._streaming_rx = False
+                return False
             else:
                 # Start hardware RX
                 try:
@@ -763,27 +763,16 @@ class BladeRFDriver:
         return None
     
     def _no_hardware_rx_thread(self, channels: List[BladeRFChannel]):
-        """Simulated RX streaming thread"""
-        config = self._channel_configs[channels[0]]
-        buffer_size = self._stream_configs[BladeRFModule.RX].buffer_size
-        
-        while self._streaming_rx:
-            # Generate simulated noise
-            samples = (np.random.randn(buffer_size) + 
-                      1j * np.random.randn(buffer_size)) * 0.01
-            samples = samples.astype(np.complex64)
-            
-            with self._rx_lock:
-                self._rx_buffer.append(samples)
-            
-            if self._rx_callback:
-                try:
-                    self._rx_callback(samples, channels[0])
-                except Exception as e:
-                    logger.error(f"RX callback error: {e}")
-            
-            # Simulate sample rate timing
-            time.sleep(buffer_size / config.sample_rate)
+        """
+        DEPRECATED: No longer generates simulated data.
+        README Rule #5: Real-World Functional Only
+        """
+        logger.error(
+            "HARDWARE REQUIRED: _no_hardware_rx_thread should not be called. "
+            "BladeRF hardware is required for RX operations."
+        )
+        self._streaming_rx = False
+        raise RuntimeError("BladeRF hardware required for RX streaming")
     
     def _no_hardware_tx_thread(self, channels: List[BladeRFChannel]):
         """Simulated TX streaming thread"""
