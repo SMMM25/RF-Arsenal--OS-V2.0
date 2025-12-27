@@ -150,8 +150,11 @@ class ExternalStackManager:
             if self._srsran_controller.is_installed:
                 logger.info("srsRAN detected and available")
             else:
-                logger.info("srsRAN not installed - will run in simulation mode")
-                self._stack_availability[StackType.SRSRAN] = True  # Allow simulation
+                logger.warning(
+                    "DEPENDENCY REQUIRED: srsRAN not installed. "
+                    "Install with: ./install/install_srsran.sh"
+                )
+                self._stack_availability[StackType.SRSRAN] = False  # No simulation
                 
         except ImportError as e:
             logger.warning(f"srsRAN module not available: {e}")
@@ -171,8 +174,11 @@ class ExternalStackManager:
             if self._oai_controller.is_installed:
                 logger.info("OpenAirInterface detected and available")
             else:
-                logger.info("OAI not installed - will run in simulation mode")
-                self._stack_availability[StackType.OAI] = True
+                logger.warning(
+                    "DEPENDENCY REQUIRED: OpenAirInterface not installed. "
+                    "Install with: ./install/install_oai.sh"
+                )
+                self._stack_availability[StackType.OAI] = False  # No simulation
                 
         except ImportError as e:
             logger.warning(f"OAI module not available: {e}")

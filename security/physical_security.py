@@ -3,6 +3,10 @@
 Physical Security Systems
 Tamper detection sensors, Faraday mode, panic button
 Hardware-level security for RF Arsenal OS
+
+REAL-WORLD FUNCTIONAL ONLY (README Rule #5):
+- Requires RPi.GPIO on Raspberry Pi hardware
+- NO SIMULATION MODE - Features disabled without hardware
 """
 
 import time
@@ -11,14 +15,18 @@ from typing import Callable, Dict, Optional, List
 from dataclasses import dataclass
 from enum import Enum
 import subprocess
+import logging
 
-# Try to import RPi.GPIO, fallback to simulation if not available
+logger = logging.getLogger(__name__)
+
+# Try to import RPi.GPIO - only available on Raspberry Pi
 try:
     import RPi.GPIO as GPIO
     GPIO_AVAILABLE = True
+    logger.info("RPi.GPIO available - physical security features enabled")
 except ImportError:
     GPIO_AVAILABLE = False
-    print("[PHYSICAL SECURITY] RPi.GPIO not available - using simulation mode")
+    logger.warning("RPi.GPIO not available - physical security features require Raspberry Pi hardware")
 
 
 class SensorType(Enum):
@@ -70,13 +78,20 @@ class TamperDetection:
             GPIO.setwarnings(False)
         
     def enable_tamper_sensors(self):
-        """Enable all physical tamper sensors"""
-        print("[TAMPER] Enabling tamper detection sensors...")
+        """
+        Enable all physical tamper sensors.
+        
+        REAL-WORLD FUNCTIONAL ONLY (README Rule #5):
+        - Requires Raspberry Pi with RPi.GPIO
+        - NO SIMULATION MODE - Returns False without hardware
+        """
+        logger.info("[TAMPER] Enabling tamper detection sensors...")
         
         if not GPIO_AVAILABLE:
-            print("[TAMPER] ⚠ GPIO not available - running in simulation mode")
-            self.sensors_enabled = True
-            return
+            logger.warning("[TAMPER] GPIO not available - physical security requires Raspberry Pi hardware")
+            logger.warning("[TAMPER] Tamper detection DISABLED (no simulation mode per README Rule #5)")
+            self.sensors_enabled = False
+            return False
         
         try:
             # Enclosure sensor (magnetic reed switch)

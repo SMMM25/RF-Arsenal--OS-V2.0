@@ -174,12 +174,12 @@ def demo_hardware_wizard():
         for ant in ANTENNA_GUIDE[:5]:
             print(f"  {ant.name}: {ant.freq_min_mhz}-{ant.freq_max_mhz} MHz ({ant.connector})")
         
-        # Detection status (without hardware)
+        # Detection status
         print_section("Hardware Detection")
-        print("  [Note] No hardware connected - running in simulation mode")
-        print("  -> Auto-detection ready for BladeRF, HackRF, LimeSDR, RTL-SDR")
-        print("  -> Automatic driver verification available")
-        print("  -> Self-calibration routines prepared")
+        print("  [Note] Connect SDR hardware to enable RF operations")
+        print("  -> Supported: BladeRF 2.0 xA9, HackRF One, LimeSDR, RTL-SDR, USRP")
+        print("  -> Auto-detection and driver verification on connect")
+        print("  -> Self-calibration runs automatically with hardware")
         
         print("\n[OK] Hardware Wizard ready")
         return True

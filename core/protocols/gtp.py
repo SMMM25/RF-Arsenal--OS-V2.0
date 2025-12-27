@@ -596,11 +596,11 @@ class GTPv1UHandler:
             
         except OSError as e:
             # Socket binding failed (port in use or permission denied)
-            logger.warning(f"Could not bind GTP-U socket: {e}")
-            logger.info("Running in simulation mode")
-            self._running = True
-            self._simulated = True
-            return True
+            logger.error(f"DEPENDENCY REQUIRED: Could not bind GTP-U socket: {e}")
+            logger.error("GTP requires root privileges and available port 2152")
+            self._running = False
+            self._simulated = False
+            return False
         except Exception as e:
             logger.error(f"GTP-U handler start failed: {e}")
             return False

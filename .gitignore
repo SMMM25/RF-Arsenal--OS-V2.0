@@ -1,2 +1,6 @@
 *.pyc
 __pycache__/
+
+# External dependencies - cloned during installation
+external/yate/
+external/yatebts/

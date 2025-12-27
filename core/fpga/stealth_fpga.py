@@ -773,8 +773,11 @@ class StealthFPGAController:
     async def _configure_fpga(self, profile: StealthProfile) -> None:
         """Configure FPGA for stealth operation"""
         if self._fpga is None:
-            logger.warning("No FPGA controller, running in simulation mode")
-            return
+            logger.error(
+                "HARDWARE REQUIRED: No FPGA controller available. "
+                "FPGA stealth features require BladeRF 2.0 xA9 with FPGA."
+            )
+            raise RuntimeError("FPGA hardware required for stealth configuration")
         
         # Configure hopping
         hop_rate_cycles = int(30_720_000 / profile.hop_config.hop_rate_hz)
