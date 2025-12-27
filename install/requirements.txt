@@ -1,0 +1,49 @@
+# install/requirements.txt
+# RF Arsenal OS - Core Dependencies (Pinned Versions for Stability)
+# Last Updated: 2024-12-20
+# Target: Raspberry Pi 5 (Primary), Pi 4/3 (Secondary)
+
+# Core Scientific Computing
+numpy>=1.21.0,<2.0.0          # Array operations
+scipy>=1.7.0,<2.0.0           # Scientific computing
+
+# GUI Framework
+PyQt6>=6.2.0,<7.0.0           # Primary GUI framework
+pyqtgraph>=0.12.0,<1.0.0      # Real-time plotting
+
+# Networking & Security
+requests>=2.26.0,<3.0.0       # HTTP library
+PySocks>=1.7.1,<2.0.0         # SOCKS proxy support
+cryptography>=3.4.8,<42.0.0   # Encryption library
+PyYAML>=5.4.1,<7.0.0          # Configuration files
+
+# NEW: Wireshark Integration
+pyshark>=0.6,<1.0.0           # PyShark wrapper for Wireshark/TShark
+
+# System Utilities
+psutil>=5.8.0,<6.0.0          # System monitoring
+scapy>=2.4.5,<3.0.0           # Packet manipulation
+
+# RF & Satellite
+skyfield>=1.39,<2.0.0         # Satellite tracking
+
+# Hardware (Raspberry Pi)
+RPi.GPIO>=0.7.1,<1.0.0        # GPIO control (Pi 5/4/3)
+
+# Optional: BladeRF (install separately via apt)
+# sudo apt-get install libbladerf-dev bladerf
+
+# Optional: LoRa Support
+# pyLoRa>=0.4.0,<1.0.0        # Uncomment if using LoRa mesh
+
+# Optional: Bluetooth Mesh
+# pybluez>=0.23,<1.0.0        # Uncomment if using BLE mesh
+
+# Optional: AI/ML Features
+# scikit-learn>=1.0.0,<2.0.0  # Machine learning
+# transformers>=4.20.0,<5.0.0 # Local NLP models
+
+# Development Dependencies (optional)
+# pytest>=7.0.0,<8.0.0        # Testing framework
+# black>=22.0.0,<24.0.0       # Code formatter
+# flake8>=4.0.0,<7.0.0        # Linter

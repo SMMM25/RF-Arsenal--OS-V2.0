@@ -1,0 +1,169 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rf-arsenal-os"
+version = "1.0.0"
+description = "Mobile RF Security Testing Platform for Raspberry Pi"
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = ">=3.9"
+authors = [
+    {name = "RF-Arsenal-OS Project"}
+]
+maintainers = [
+    {name = "RF-Arsenal-OS Project"}
+]
+keywords = [
+    "rf", "security", "sdr", "penetration-testing", "bladerf",
+    "raspberry-pi", "cellular", "wifi", "gps", "sigint"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Environment :: X11 Applications :: Qt",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Security",
+    "Topic :: Scientific/Engineering",
+    "Topic :: System :: Networking",
+]
+
+dependencies = [
+    "numpy>=1.21.0",
+    "scipy>=1.7.0",
+    "PyQt6>=6.0.0",
+    "matplotlib>=3.5.0",
+    "pyserial>=3.5",
+    "requests>=2.28.0",
+    "cryptography>=38.0.0",
+    "pycryptodome>=3.15.0",
+    "scapy>=2.5.0",
+    "pyshark>=0.6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-asyncio>=0.21.0",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+]
+ai = [
+    "torch>=2.0.0",
+    "transformers>=4.30.0",
+    "openai-whisper>=20230314",
+]
+docs = [
+    "sphinx>=6.0.0",
+    "sphinx-rtd-theme>=1.2.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/SMMM25/RF-Arsenal-OS"
+Documentation = "https://github.com/SMMM25/RF-Arsenal-OS/tree/main/docs"
+Repository = "https://github.com/SMMM25/RF-Arsenal-OS.git"
+Issues = "https://github.com/SMMM25/RF-Arsenal-OS/issues"
+Changelog = "https://github.com/SMMM25/RF-Arsenal-OS/blob/main/CHANGELOG.md"
+
+[project.scripts]
+rf-arsenal = "rf_arsenal_os:main"
+
+[tool.setuptools]
+packages = ["core", "modules", "security", "ui", "tests"]
+include-package-data = true
+
+[tool.setuptools.package-data]
+"*" = ["*.json", "*.yaml", "*.yml", "*.md"]
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-v",
+    "--tb=short",
+    "--strict-markers",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "hardware: marks tests requiring physical hardware",
+    "integration: marks integration tests",
+    "security: marks security-related tests",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
+
+[tool.coverage.run]
+source = ["core", "modules", "security"]
+branch = true
+omit = [
+    "*/tests/*",
+    "*/__pycache__/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]
+
+[tool.black]
+line-length = 100
+target-version = ['py39', 'py310', 'py311', 'py312']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+    | \.mypy_cache
+    | \.pytest_cache
+    | __pycache__
+    | build
+    | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 100
+skip_gitignore = true
+known_first_party = ["core", "modules", "security", "ui"]
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+exclude = [
+    "tests/",
+    "build/",
+    "dist/",
+]
+
+[tool.flake8]
+max-line-length = 100
+exclude = [
+    ".git",
+    "__pycache__",
+    "build",
+    "dist",
+]
+ignore = ["E501", "W503"]
