@@ -6,6 +6,11 @@ Real GSM/LTE Base Station Controller
 Hardware: BladeRF 2.0 micro xA9
 Capabilities: GSM BTS, IMSI Catching, SMS Interception, Voice Interception, LTE eNodeB
 
+README COMPLIANCE:
+- Real-World Functional Only: No simulation mode fallbacks
+- Requires YateBTS installation and SDR hardware
+- Use --dry-run for configuration testing without hardware
+
 WARNING: This module enables real cellular interception.
 Use only in authorized testing environments with proper legal authorization.
 """
@@ -31,6 +36,18 @@ try:
     SOAPY_AVAILABLE = True
 except ImportError:
     SOAPY_AVAILABLE = False
+
+# Import custom exceptions
+try:
+    from core import HardwareRequirementError, DependencyError
+except ImportError:
+    class HardwareRequirementError(Exception):
+        def __init__(self, message, required_hardware=None, alternatives=None):
+            super().__init__(f"HARDWARE REQUIRED: {message}")
+    
+    class DependencyError(Exception):
+        def __init__(self, message, package=None, install_cmd=None):
+            super().__init__(f"DEPENDENCY REQUIRED: {message}")
 
 
 class BTSMode(Enum):
@@ -342,20 +359,27 @@ Output=/var/log/yatebts/yatebts.log
             self.config.mode = mode
             self.mode = mode
             
-        # Check dependencies
+        # Check dependencies - README COMPLIANCE: Fail if missing
         deps = self.check_dependencies()
         missing = [k for k, v in deps.items() if not v]
         if missing:
-            self.logger.error(f"Missing dependencies: {missing}")
-            # Continue anyway for simulation mode
+            raise DependencyError(
+                f"Missing required dependencies: {', '.join(missing)}",
+                package="yatebts",
+                install_cmd="See install/install_yatebts.sh for installation instructions"
+            )
             
-        # Detect hardware
+        # Detect hardware - README COMPLIANCE: No simulation fallback
         hw = self.detect_hardware()
         if hw['recommended']:
             self.config.sdr_serial = hw['recommended'].get('serial')
             self.logger.info(f"Using hardware: {hw['recommended']['label']}")
         else:
-            self.logger.warning("No SDR hardware detected - running in simulation mode")
+            raise HardwareRequirementError(
+                "YateBTS requires SDR hardware for cellular operations",
+                required_hardware="BladeRF 2.0 micro xA9",
+                alternatives=["BladeRF x40/x115", "USRP B200/B210"]
+            )
             
         # Write configuration
         self.write_config()
@@ -379,9 +403,12 @@ Output=/var/log/yatebts/yatebts.log
                 else:
                     raise Exception("Process exited immediately")
             else:
-                # Simulation mode
-                self.running = True
-                self.logger.info(f"YateBTS started in SIMULATION mode ({self.mode.value})")
+                # README COMPLIANCE: No simulation mode - require YateBTS installation
+                raise DependencyError(
+                    f"YateBTS binary not found at {self.config.yate_path}",
+                    package="yatebts",
+                    install_cmd="./install/install_yatebts.sh or apt install yatebts"
+                )
                 
             # Start capture thread
             self._stop_event.clear()

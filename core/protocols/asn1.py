@@ -644,15 +644,39 @@ class PERDecoder:
     
     def decode_enumerated(self, buf: BitBuffer, num_values: int,
                          extensible: bool = False) -> int:
-        """Decode ENUMERATED"""
+        """Decode ENUMERATED per X.691 Section 13"""
         if extensible:
             extended = buf.read_bit()
             if extended:
-                # Handle extension (not implemented)
-                return 0
+                # Extension handling per X.691 13.3
+                # Extended enumeration value encoded as normally small non-negative integer
+                value = self.decode_normally_small_non_negative_whole_number(buf)
+                return num_values + value  # Return extended value offset by root count
         
         bits_needed = (num_values - 1).bit_length()
         return buf.read_bits(bits_needed)
+    
+    def decode_normally_small_non_negative_whole_number(self, buf: BitBuffer) -> int:
+        """Decode normally small non-negative whole number per X.691 10.6"""
+        if buf.read_bit() == 0:
+            # Value is 0-63, encoded in 6 bits
+            return buf.read_bits(6)
+        else:
+            # Value >= 64, encoded as semi-constrained whole number
+            length = self.decode_length_determinant(buf)
+            return buf.read_bits(length * 8)
+    
+    def decode_length_determinant(self, buf: BitBuffer) -> int:
+        """Decode length determinant per X.691 10.9"""
+        first = buf.read_bits(8)
+        if first < 128:
+            return first
+        elif first < 192:
+            second = buf.read_bits(8)
+            return ((first & 0x3F) << 8) | second
+        else:
+            # Fragmented, return fragment length indicator
+            return (first & 0x3F) * 16384
     
     def decode_bit_string(self, buf: BitBuffer,
                          constraint: ASN1Constraint) -> np.ndarray:
@@ -725,12 +749,15 @@ class PERDecoder:
     
     def decode_choice(self, buf: BitBuffer, num_choices: int,
                      extensible: bool = False) -> int:
-        """Decode CHOICE index"""
+        """Decode CHOICE index per X.691 Section 22"""
         if extensible:
             extended = buf.read_bit()
             if extended:
-                # Handle extension (not implemented)
-                return 0
+                # Extension handling per X.691 22.8
+                # Extended choice index encoded as normally small non-negative integer
+                ext_index = self.decode_normally_small_non_negative_whole_number(buf)
+                # Return extended choice index offset by root count
+                return num_choices + ext_index
         
         bits_needed = (num_choices - 1).bit_length()
         return buf.read_bits(bits_needed)

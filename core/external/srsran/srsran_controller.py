@@ -9,6 +9,11 @@ srsRAN Project (https://www.srsran.com/) provides:
 - srsGNB: 5G NR gNodeB
 - srsUE 5G: 5G NR UE
 
+README COMPLIANCE:
+- Real-World Functional Only: No simulation mode fallbacks
+- Requires srsRAN installation and compatible SDR hardware
+- See install/install_srsran.sh for installation instructions
+
 This module provides stealth-aware control and integration.
 """
 
@@ -30,6 +35,18 @@ from pathlib import Path
 import configparser
 
 logger = logging.getLogger(__name__)
+
+# Import custom exceptions
+try:
+    from core import HardwareRequirementError, DependencyError
+except ImportError:
+    class HardwareRequirementError(Exception):
+        def __init__(self, message, required_hardware=None, alternatives=None):
+            super().__init__(f"HARDWARE REQUIRED: {message}")
+    
+    class DependencyError(Exception):
+        def __init__(self, message, package=None, install_cmd=None):
+            super().__init__(f"DEPENDENCY REQUIRED: {message}")
 
 
 # ============================================================================
@@ -779,12 +796,26 @@ class SrsRANController:
         
         return exe_name
     
-    def initialize(self) -> bool:
-        """Initialize srsRAN controller"""
+    def initialize(self, dry_run: bool = False) -> bool:
+        """
+        Initialize srsRAN controller.
+        
+        README COMPLIANCE: No simulation fallback - requires srsRAN installation.
+        
+        Args:
+            dry_run: If True, skips installation check for configuration testing
+            
+        Raises:
+            DependencyError: If srsRAN is not installed
+        """
         logger.info("Initializing srsRAN controller")
         
-        if not self._installed:
-            logger.warning("srsRAN not installed - running in simulation mode")
+        if not self._installed and not dry_run:
+            raise DependencyError(
+                "srsRAN software suite is not installed",
+                package="srsRAN",
+                install_cmd="./install/install_srsran.sh or see https://docs.srsran.com/"
+            )
         
         # Create config generator
         self._config_generator = SrsRANConfigGenerator(

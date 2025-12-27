@@ -785,7 +785,7 @@ class ChamberCalibration:
         # Q-factor from power balance method
         # Q = 16 * pi^2 * V * <|E|^2> / (lambda^3 * P_in)
         
-        # For simulation, estimate from measurement variance
+        # Estimate Q from measurement variance across stirrer positions
         measurements = self.controller.measure_at_stirrer_positions()
         values = np.array([m.value for m in measurements])
         

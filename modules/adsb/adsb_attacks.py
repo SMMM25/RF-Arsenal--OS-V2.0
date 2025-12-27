@@ -12,6 +12,11 @@ Capabilities:
 
 Hardware: BladeRF 2.0 micro xA9
 
+README COMPLIANCE:
+- Real-World Functional Only: No simulation mode fallbacks
+- Requires actual SDR hardware for all operations
+- Use --dry-run flag for signal processing testing without TX
+
 WARNING: ADS-B spoofing is ILLEGAL in most jurisdictions.
 This module is for authorized security research only.
 Unauthorized use may result in severe criminal penalties.
@@ -28,12 +33,25 @@ from enum import Enum
 from datetime import datetime
 import numpy as np
 
-# Try to import SoapySDR
+# Import SoapySDR - Required dependency
 try:
     import SoapySDR
     SOAPY_AVAILABLE = True
 except ImportError:
     SOAPY_AVAILABLE = False
+
+# Import custom exceptions
+try:
+    from core import HardwareRequirementError, DependencyError
+except ImportError:
+    # Fallback definitions if core not available
+    class HardwareRequirementError(Exception):
+        def __init__(self, message, required_hardware=None, alternatives=None):
+            super().__init__(f"HARDWARE REQUIRED: {message}")
+    
+    class DependencyError(Exception):
+        def __init__(self, message, package=None, install_cmd=None):
+            super().__init__(f"DEPENDENCY REQUIRED: {message}")
 
 
 class ADSBMessageType(Enum):
@@ -156,18 +174,38 @@ class ADSBController:
             self.logger.warning("=" * 60)
             self._legal_warning_shown = True
             
-    def init_hardware(self) -> bool:
-        """Initialize SDR hardware"""
+    def init_hardware(self, dry_run: bool = False) -> bool:
+        """
+        Initialize SDR hardware.
+        
+        README COMPLIANCE: No simulation fallback - requires real hardware.
+        
+        Args:
+            dry_run: If True, validates configuration without requiring hardware
+            
+        Raises:
+            DependencyError: If SoapySDR is not installed
+            HardwareRequirementError: If no SDR hardware is detected
+        """
         if not SOAPY_AVAILABLE:
-            self.logger.warning("SoapySDR not available - using simulation mode")
-            return True
+            raise DependencyError(
+                "SoapySDR library is required for ADS-B operations",
+                package="SoapySDR",
+                install_cmd="apt install soapysdr-tools python3-soapysdr libsoapysdr-dev"
+            )
             
         try:
             # Find BladeRF or compatible device
             devices = SoapySDR.Device.enumerate()
             if not devices:
-                self.logger.warning("No SDR devices found - using simulation mode")
-                return True
+                if dry_run:
+                    self.logger.info("Dry-run mode: Hardware check skipped")
+                    return True
+                raise HardwareRequirementError(
+                    "No SDR devices detected. ADS-B operations require SDR hardware.",
+                    required_hardware="BladeRF 2.0 micro xA9",
+                    alternatives=["RTL-SDR (receive only)", "HackRF One", "USRP B200"]
+                )
                 
             # Prefer BladeRF
             for dev in devices:
@@ -593,10 +631,20 @@ class ADSBController:
         return reg
         
     def _transmit_message(self, msg: bytes) -> bool:
-        """Transmit ADS-B message"""
+        """
+        Transmit ADS-B message.
+        
+        README COMPLIANCE: Requires real hardware - no simulation.
+        
+        Raises:
+            HardwareRequirementError: If no SDR hardware is connected
+        """
         if not self._sdr:
-            self.logger.warning("No hardware - simulation only")
-            return True
+            raise HardwareRequirementError(
+                "Cannot transmit without SDR hardware connected",
+                required_hardware="BladeRF 2.0 micro xA9 (TX capable)",
+                alternatives=["HackRF One", "USRP B200/B210"]
+            )
             
         try:
             # Configure TX
@@ -673,7 +721,8 @@ class ADSBController:
             'aircraft_tracked': len(self.aircraft),
             'messages_received': len(self.messages),
             'frequency': self.ADSB_FREQ,
-            'hardware': 'BladeRF 2.0 micro xA9' if self._sdr else 'Simulation'
+            'hardware_connected': self._sdr is not None,
+            'hardware_type': 'BladeRF 2.0 micro xA9' if self._sdr else 'None - Hardware Required'
         }
 
 

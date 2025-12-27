@@ -12,6 +12,11 @@ Capabilities:
 
 Hardware: Oscilloscope/Logic Analyzer + BladeRF for EM capture
 
+README COMPLIANCE:
+- Real-World Functional Only: No simulation mode fallbacks
+- Requires actual capture hardware (oscilloscope, SDR, or logic analyzer)
+- Use imported traces for analysis testing without hardware
+
 WARNING: These techniques may be restricted. Use only on devices you own
 or have explicit authorization to test.
 """
@@ -31,6 +36,18 @@ try:
     SOAPY_AVAILABLE = True
 except ImportError:
     SOAPY_AVAILABLE = False
+
+# Import custom exceptions
+try:
+    from core import HardwareRequirementError, DependencyError
+except ImportError:
+    class HardwareRequirementError(Exception):
+        def __init__(self, message, required_hardware=None, alternatives=None):
+            super().__init__(f"HARDWARE REQUIRED: {message}")
+    
+    class DependencyError(Exception):
+        def __init__(self, message, package=None, install_cmd=None):
+            super().__init__(f"DEPENDENCY REQUIRED: {message}")
 
 
 class AttackMode(Enum):
@@ -152,11 +169,25 @@ class PowerAnalysisController:
         # Configuration
         self.target_algorithm = TargetAlgorithm.AES_128
         
-    def init_em_capture(self) -> bool:
-        """Initialize EM capture hardware"""
+    def init_em_capture(self, dry_run: bool = False) -> bool:
+        """
+        Initialize EM capture hardware.
+        
+        README COMPLIANCE: No simulation fallback - requires real hardware.
+        
+        Args:
+            dry_run: If True, skips hardware requirement for testing
+            
+        Raises:
+            DependencyError: If SoapySDR is not installed
+            HardwareRequirementError: If no capture hardware is detected
+        """
         if not SOAPY_AVAILABLE:
-            self.logger.warning("SoapySDR not available - simulation mode")
-            return True
+            raise DependencyError(
+                "SoapySDR library required for EM capture",
+                package="SoapySDR",
+                install_cmd="apt install soapysdr-tools python3-soapysdr libsoapysdr-dev"
+            )
             
         try:
             devices = SoapySDR.Device.enumerate()
@@ -166,11 +197,21 @@ class PowerAnalysisController:
                 self._sdr.setGain(SoapySDR.SOAPY_SDR_RX, 0, 60)
                 self.logger.info("EM capture initialized")
                 return True
+            elif dry_run:
+                self.logger.info("Dry-run mode: Hardware check skipped")
+                return True
+            else:
+                raise HardwareRequirementError(
+                    "Power analysis requires EM capture hardware",
+                    required_hardware="High-bandwidth oscilloscope or SDR (100+ MSPS)",
+                    alternatives=["BladeRF 2.0 xA9", "USRP B200", "ChipWhisperer"]
+                )
                 
+        except HardwareRequirementError:
+            raise
         except Exception as e:
             self.logger.error(f"EM init error: {e}")
-            
-        return False
+            return False
         
     def capture_trace(self, plaintext: bytes, trigger_callback: Callable = None,
                      num_samples: int = 10000) -> Optional[PowerTrace]:
