@@ -35,11 +35,16 @@ logger = logging.getLogger(__name__)
 
 
 class FIPSSecurityLevel(IntEnum):
-    """FIPS 140-3 security levels"""
-    LEVEL_1 = 1  # Basic security
-    LEVEL_2 = 2  # Role-based auth, tamper evidence
-    LEVEL_3 = 3  # Identity-based auth, tamper response
-    LEVEL_4 = 4  # Physical security envelope (not implemented)
+    """
+    FIPS 140-3 security levels.
+    
+    RF Arsenal supports Levels 1-3 in software.
+    Level 4 requires dedicated hardware security modules (HSM).
+    """
+    LEVEL_1 = 1  # Basic security - approved algorithms, basic self-tests
+    LEVEL_2 = 2  # Role-based auth, tamper evidence, OS requirements
+    LEVEL_3 = 3  # Identity-based auth, tamper response, trusted path
+    LEVEL_4 = 4  # Physical security envelope (requires HSM hardware)
 
 
 class FIPSOperationalState(Enum):

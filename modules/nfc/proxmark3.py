@@ -12,6 +12,11 @@ Capabilities:
 - Emulation
 
 Hardware: Proxmark3 Easy/RDV4
+
+README COMPLIANCE:
+- Real-World Functional Only: No simulation mode fallbacks
+- Requires actual Proxmark3 hardware connected via USB
+- Use --dry-run for testing without hardware
 """
 
 import subprocess
@@ -25,6 +30,18 @@ try:
 except ImportError:
     SERIAL_AVAILABLE = False
     serial = None
+
+# Import custom exceptions
+try:
+    from core import HardwareRequirementError, DependencyError
+except ImportError:
+    class HardwareRequirementError(Exception):
+        def __init__(self, message, required_hardware=None, alternatives=None):
+            super().__init__(f"HARDWARE REQUIRED: {message}")
+    
+    class DependencyError(Exception):
+        def __init__(self, message, package=None, install_cmd=None):
+            super().__init__(f"DEPENDENCY REQUIRED: {message}")
 import time
 import json
 import re
@@ -172,10 +189,20 @@ class Proxmark3Controller:
         self._stop_sniff = threading.Event()
         
     def detect_device(self) -> Optional[str]:
-        """Auto-detect Proxmark3 device"""
+        """
+        Auto-detect Proxmark3 device.
+        
+        README COMPLIANCE: No simulation fallback - requires real hardware.
+        
+        Raises:
+            DependencyError: If pyserial is not installed
+        """
         if not SERIAL_AVAILABLE:
-            self.logger.warning("Serial library not available - using simulation mode")
-            return None
+            raise DependencyError(
+                "PySerial library required for Proxmark3 communication",
+                package="pyserial",
+                install_cmd="pip install pyserial"
+            )
             
         ports = serial.tools.list_ports.comports()
         

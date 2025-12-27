@@ -7,6 +7,11 @@ OpenAirInterface (https://openairinterface.org/) provides:
 - OAI UE: LTE/NR UE
 - OAI CN: 5G Core Network (AMF, SMF, UPF, etc.)
 
+README COMPLIANCE:
+- Real-World Functional Only: No simulation mode fallbacks
+- Requires OpenAirInterface installation and compatible SDR hardware
+- See install/install_oai.sh for installation instructions
+
 This module provides stealth-aware control and integration.
 """
 
@@ -28,6 +33,18 @@ from enum import IntEnum, auto
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
+
+# Import custom exceptions
+try:
+    from core import HardwareRequirementError, DependencyError
+except ImportError:
+    class HardwareRequirementError(Exception):
+        def __init__(self, message, required_hardware=None, alternatives=None):
+            super().__init__(f"HARDWARE REQUIRED: {message}")
+    
+    class DependencyError(Exception):
+        def __init__(self, message, package=None, install_cmd=None):
+            super().__init__(f"DEPENDENCY REQUIRED: {message}")
 
 
 # ============================================================================
@@ -1001,12 +1018,26 @@ class OAIController:
         
         return exe_name
     
-    def initialize(self) -> bool:
-        """Initialize OAI controller"""
+    def initialize(self, dry_run: bool = False) -> bool:
+        """
+        Initialize OAI controller.
+        
+        README COMPLIANCE: No simulation fallback - requires OAI installation.
+        
+        Args:
+            dry_run: If True, skips installation check for configuration testing
+            
+        Raises:
+            DependencyError: If OpenAirInterface is not installed
+        """
         logger.info("Initializing OpenAirInterface controller")
         
-        if not self._installed:
-            logger.warning("OAI not installed - running in simulation mode")
+        if not self._installed and not dry_run:
+            raise DependencyError(
+                "OpenAirInterface software suite is not installed",
+                package="OpenAirInterface",
+                install_cmd="./install/install_oai.sh or see https://openairinterface.org/"
+            )
         
         # Create config generator
         self._config_generator = OAIConfigGenerator(

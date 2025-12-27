@@ -383,7 +383,13 @@ class AIController:
             result = handler(params)
             return result
         else:
-            return f"Command '{intent}' not implemented yet."
+            # Provide helpful response for unknown commands
+            similar = [cmd for cmd in self.command_map.keys() 
+                      if any(word in cmd.lower() for word in intent.lower().split())]
+            if similar:
+                suggestions = ', '.join(similar[:3])
+                return f"Command '{intent}' not recognized. Did you mean: {suggestions}? Use 'help' for available commands."
+            return f"Command '{intent}' not recognized. Use 'help' to see available commands."
             
     # Command handlers
     def handle_cellular(self, params):

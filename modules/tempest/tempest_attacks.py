@@ -12,6 +12,11 @@ Capabilities:
 
 Hardware: BladeRF 2.0 micro xA9 with directional antenna
 
+README COMPLIANCE:
+- Real-World Functional Only: No simulation mode fallbacks
+- Requires actual SDR hardware with wideband RX capability
+- Directional antenna required for optimal results
+
 WARNING: TEMPEST surveillance may be illegal without authorization.
 This module is for authorized security research only.
 """
@@ -39,6 +44,18 @@ try:
     PIL_AVAILABLE = True
 except ImportError:
     PIL_AVAILABLE = False
+
+# Import custom exceptions
+try:
+    from core import HardwareRequirementError, DependencyError
+except ImportError:
+    class HardwareRequirementError(Exception):
+        def __init__(self, message, required_hardware=None, alternatives=None):
+            super().__init__(f"HARDWARE REQUIRED: {message}")
+    
+    class DependencyError(Exception):
+        def __init__(self, message, package=None, install_cmd=None):
+            super().__init__(f"DEPENDENCY REQUIRED: {message}")
 
 
 class TEMPESTMode(Enum):
@@ -186,17 +203,37 @@ class TEMPESTController:
             except Exception as e:
                 self.logger.error(f"Callback error: {e}")
                 
-    def init_hardware(self) -> bool:
-        """Initialize SDR hardware"""
+    def init_hardware(self, dry_run: bool = False) -> bool:
+        """
+        Initialize SDR hardware for TEMPEST operations.
+        
+        README COMPLIANCE: No simulation fallback - requires real hardware.
+        
+        Args:
+            dry_run: If True, validates configuration without requiring hardware
+            
+        Raises:
+            DependencyError: If SoapySDR is not installed
+            HardwareRequirementError: If no SDR hardware is detected
+        """
         if not SOAPY_AVAILABLE:
-            self.logger.warning("SoapySDR not available - simulation mode")
-            return True
+            raise DependencyError(
+                "SoapySDR library required for TEMPEST operations",
+                package="SoapySDR",
+                install_cmd="apt install soapysdr-tools python3-soapysdr libsoapysdr-dev"
+            )
             
         try:
             devices = SoapySDR.Device.enumerate()
             if not devices:
-                self.logger.warning("No SDR found - simulation mode")
-                return True
+                if dry_run:
+                    self.logger.info("Dry-run mode: Hardware check skipped")
+                    return True
+                raise HardwareRequirementError(
+                    "TEMPEST operations require wideband SDR hardware",
+                    required_hardware="BladeRF 2.0 micro xA9 with directional antenna",
+                    alternatives=["USRP B200/B210", "HackRF One"]
+                )
                 
             # Prefer BladeRF for high bandwidth
             for dev in devices:

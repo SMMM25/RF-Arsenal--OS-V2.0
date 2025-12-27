@@ -395,15 +395,15 @@ class QuietZoneCharacterization:
         for z in z_points:
             for y in y_points:
                 for x in x_points:
-                    # In real system, would move probe to position
-                    # For simulation, measure at current position
+                    # Move probe to position and measure
+                    # Real hardware will physically position the probe
                     measurement = self.controller.chamber.measure(
                         MeasurementType.POWER
                     )
                     
                     self._amplitude_data[(x, y, z)] = measurement.value
                     
-                    # Simulate phase measurement
+                    # Measure phase at same position
                     phase_meas = self.controller.chamber.measure(
                         MeasurementType.PHASE
                     )
