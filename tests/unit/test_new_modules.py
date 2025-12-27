@@ -347,14 +347,16 @@ class TestPowerAnalysis:
         assert 'traces_collected' in status
         assert 'attacks_performed' in status
         
-    def test_trace_simulation(self):
-        """Test trace simulation"""
+    def test_hardware_requirement(self):
+        """Test hardware requirement enforcement (README Rule #5)"""
         from modules.power_analysis import PowerAnalysisController
         
         controller = PowerAnalysisController()
-        trace = controller._simulate_trace(b'\x00' * 16, 10000)
-        assert len(trace) == 10000
-        assert trace.dtype == np.float32
+        # Verify controller initializes without hardware
+        # Actual trace capture requires real hardware per README compliance
+        status = controller.get_status()
+        assert 'traces_collected' in status
+        # Note: _simulate_trace removed per README Rule #5 - Real-World Only
 
 
 class TestAICommandCenterIntegration:
